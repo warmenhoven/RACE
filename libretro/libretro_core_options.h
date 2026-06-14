@@ -128,6 +128,17 @@ struct retro_core_option_definition option_defs_us[] = {
       },
       "deterministic"
    },
+   {
+      "race_audio_quality",
+      "Audio Quality (Restart)",
+      "Selects the sound synthesis method. 'Fast' uses a lightweight per-sample mixer (default). 'Accurate' uses band-limited Blip synthesis that matches the Mednafen reference and removes high-frequency aliasing. The CPU cost of the accurate path is small (the audio is a minor fraction of total emulation time), but it is left off by default for maximum performance headroom on low-end hardware.",
+      {
+         { "fast",     "Fast" },
+         { "accurate", "Accurate (Band-limited)" },
+         { NULL, NULL },
+      },
+      "fast"
+   },
    { NULL, NULL, NULL, {{0}}, NULL },
 };
 

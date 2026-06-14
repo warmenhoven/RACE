@@ -18,6 +18,7 @@
 #include "DrZ80_support.h"
 #endif
 #include "neopopsound.h"
+#include "neopop_blip.h"
 
 #include <string.h>
 #include "state.h"
@@ -291,6 +292,14 @@ static int state_restore(race_state_t *rs)
   sndCycles = rs->sndCycles;
   memcpy(&toneChip, &rs->toneChip, sizeof(SoundChip));
   memcpy(&noiseChip, &rs->noiseChip, sizeof(SoundChip));
+
+  /* The band-limited (accurate) audio path is a pure observer of the chip
+   * registers above and re-derives its parameters each step, so it needs no
+   * dedicated savestate fields; clearing it here drops the in-flight Blip
+   * buffer and oscillator phase so playback resumes cleanly from the restored
+   * chip state (at most an imperceptible discontinuity at the load point). */
+  if (neopop_audio_accurate)
+     neopop_blip_reset();
 
   /* Timers */
   timer0 = rs->timer0;

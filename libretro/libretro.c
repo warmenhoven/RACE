@@ -7,6 +7,7 @@
 #include "../types.h"
 #include "../state.h"
 #include "../neopopsound.h"
+#include "../neopop_blip.h"
 #include "../sound.h"
 #include "../input.h"
 #include "../flash.h"
@@ -201,6 +202,18 @@ static void check_variables(bool first_run)
       rtc_deterministic = strcmp(var.value, "realtime") ? 1 : 0;
    else
       rtc_deterministic = 1;
+
+   /* Audio quality is read on (re)start only, so the synthesis path does not
+    * change mid-frame. The fast path is the default. */
+   if (first_run)
+   {
+      var.key   = "race_audio_quality";
+      var.value = NULL;
+      if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+         neopop_audio_accurate = strcmp(var.value, "accurate") ? 0 : 1;
+      else
+         neopop_audio_accurate = 0;
+   }
 }
 
 void retro_init(void)
@@ -433,21 +446,32 @@ void retro_run(void)
    /* Get the number of samples in a frame */
    samplesPerFrame = RETRO_SAMPLE_RATE / 60;
 
-   /* sound_update overwrites every sample in the frame, so no clear is
-    * needed first; dac_update then mixes the DAC channel on top. */
-   sound_update((uint16_t*)sampleBuffer, samplesPerFrame * sizeof(int16_t));
-   dac_update((uint16_t*)sampleBuffer, samplesPerFrame * sizeof(int16_t));
-
-   p = stereoBuffer;
-
-   for (i = 0; i < samplesPerFrame; i++)
+   if (neopop_audio_accurate)
    {
-      p[0] = sampleBuffer[i];
-      p[1] = sampleBuffer[i];
-      p += 2;
+      /* Band-limited path: transitions were emitted into the Blip buffer as
+       * the CPU ran (via soundStep); flush them to interleaved stereo here. */
+      int n = neopop_blip_flush(stereoBuffer, 1024);
+      if (n > 0)
+         audio_batch_cb(stereoBuffer, n);
    }
+   else
+   {
+      /* sound_update overwrites every sample in the frame, so no clear is
+       * needed first; dac_update then mixes the DAC channel on top. */
+      sound_update((uint16_t*)sampleBuffer, samplesPerFrame * sizeof(int16_t));
+      dac_update((uint16_t*)sampleBuffer, samplesPerFrame * sizeof(int16_t));
 
-   audio_batch_cb(stereoBuffer, samplesPerFrame);
+      p = stereoBuffer;
+
+      for (i = 0; i < samplesPerFrame; i++)
+      {
+         p[0] = sampleBuffer[i];
+         p[1] = sampleBuffer[i];
+         p += 2;
+      }
+
+      audio_batch_cb(stereoBuffer, samplesPerFrame);
+   }
 }
 
 size_t retro_serialize_size(void)

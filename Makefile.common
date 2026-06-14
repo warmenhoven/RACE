@@ -3,6 +3,7 @@ DEPS_DIR          = $(CORE_DIR)/deps
 
 INCFLAGS = -I$(CORE_DIR)/ \
            -I$(CORE_DIR)/libretro \
+           -I$(CORE_DIR)/deps/blip \
            -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq (,$(findstring msvc2003,$(platform)))
@@ -21,7 +22,9 @@ SOURCES_C := \
 	$(CORE_DIR)/ngpBios.c \
 	$(CORE_DIR)/state.c \
 	$(CORE_DIR)/sound.c \
-	$(CORE_DIR)/neopopsound.c
+	$(CORE_DIR)/neopopsound.c \
+	$(CORE_DIR)/neopop_blip.c \
+	$(CORE_DIR)/deps/blip/Blip_Buffer.c
 
 ifeq ($(DRZ80),1)
 	FLAGS += -DDRZ80

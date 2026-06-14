@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "neopopsound.h"
+#include "neopop_blip.h"
 
 /* ============================================================================= */
 
@@ -319,6 +320,14 @@ void dac_writeL(unsigned char data)
    unsigned i;
    static int conv=5;
 
+   if (neopop_audio_accurate)
+   {
+      /* In band-limited mode the DAC change is emitted as a Blip transition at
+       * the current timestamp; the fast-path ring buffer below is bypassed. */
+      neopop_blip_dac(data);
+      return;
+   }
+
    /* pretend that conv=5.5 (44100/8000) conversion factor */
 
    if(conv==5)
@@ -436,6 +445,11 @@ void sound_init(int SampleRate)
 	dacLBufferCount = 0;
 	dacLBufferRead  = 0;
 	dacLBufferWrite = 0;
+
+	/* Initialise the band-limited (accurate) path as well; it is only used
+	 * when neopop_audio_accurate is set, but keeping it in sync here means a
+	 * mid-game quality switch starts from a clean state. */
+	neopop_blip_init(SampleRate);
 }
 
 /* ============================================================================= */
