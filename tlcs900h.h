@@ -12,6 +12,9 @@
 #ifndef AFX_TLCS900H_H
 #define AFX_TLCS900H_H
 
+#include <time.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -67,6 +70,14 @@ void tlcs_execute(int cycles, int skipFrames); /* skipFrames=how many frames to 
 #else
 void tlcs_execute(int cycles);
 #endif
+
+/* Real-time clock determinism (see tlcs900h.c). rtc_reset captures the base
+ * time; rtc_tick_frame advances the emulated clock once per frame. */
+extern int      rtc_deterministic;
+extern time_t   rtc_base_time;
+extern uint32_t rtc_frame_counter;
+void rtc_reset(void);
+void rtc_tick_frame(void);
 
 #ifdef __cplusplus
 }

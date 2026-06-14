@@ -6291,21 +6291,65 @@ void initTimezone(void)
 }
 
 
+/* ---------------------------------------------------------------------------
+ * Real-time clock determinism
+ *
+ * The NGPC has a real-time clock. Reading the host wall clock directly from
+ * VECT_RTCGET makes the core non-deterministic: the same input fed to two
+ * instances (netplay peers, or a runahead/rewind buffer) yields different
+ * register values, causing desyncs.
+ *
+ * To stay deterministic we capture a base time once (at load, or restored from
+ * a savestate) and advance the emulated clock purely by counting frames that
+ * have been run. One retro_run is one ~1/60s frame, so
+ *   emulated_time = rtc_base_time + (rtc_frame_counter / 60)
+ * is a pure function of the loaded state plus the number of frames executed.
+ *
+ * rtc_deterministic selects this behaviour. When it is 0 the core falls back to
+ * reading the host clock directly (live wall-clock, non-deterministic) for
+ * users who prefer a real clock over netplay/rewind safety.
+ * --------------------------------------------------------------------------- */
+int       rtc_deterministic   = 1;     /* set from core option */
+time_t    rtc_base_time       = 0;     /* host epoch captured at load/restore */
+uint32_t  rtc_frame_counter   = 0;     /* frames run since base_time */
+
+void rtc_reset(void)
+{
+   /* Capture the current host time as the deterministic base, then count
+    * frames forward from here. Called at load and on reset. */
+   rtc_base_time     = time(NULL);
+   rtc_frame_counter = 0;
+}
+
+void rtc_tick_frame(void)
+{
+   /* Called once per retro_run. Saturate rather than wrap so a very long
+    * session can't roll the counter back. */
+   if (rtc_frame_counter != 0xFFFFFFFFu)
+      rtc_frame_counter++;
+}
+
+static time_t rtc_effective_time(void)
+{
+   if (rtc_deterministic)
+      return rtc_base_time + (time_t)(rtc_frame_counter / 60u);
+   return time(NULL);
+}
+
 static INLINE int VECT_RTCGET(unsigned int dest)
 {
-   // dest+0 // year
-   // dest+1 // month  all in BCD
-   // dest+2 // day
-   // dest+3 // hours
-   // dest+4 // minutes
-   // dest+5 // nr year after leap : day of the week
+   /* dest+0 // year
+    * dest+1 // month  all in BCD
+    * dest+2 // day
+    * dest+3 // hours
+    * dest+4 // minutes
+    * dest+5 // nr year after leap : day of the week */
    unsigned char *d = get_address(dest);
    int year;
    struct tm *lt;
-   time_t now = time(NULL);
-   initTimezone(); //make sure TZ is set up
+   time_t now = rtc_effective_time();
+   initTimezone(); /* make sure TZ is set up */
    lt = localtime(&now);
-   //int year = (lt->tm_year+1900) % 100;
    year = lt->tm_year-100;
 
    d[0] = makeBCD(year);

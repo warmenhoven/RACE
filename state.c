@@ -28,7 +28,7 @@
 #undef PC
 #endif
 
-#define CURRENT_SAVE_STATE_VERSION 0x11
+#define CURRENT_SAVE_STATE_VERSION 0x12
 
 struct race_state_header
 {
@@ -65,6 +65,12 @@ struct race_state_0x11
 
 	/* DMA */
   u8 ldcRegs[64];
+
+  /* Real-time clock (appended): persisting these makes a loaded state
+   * reproduce the same emulated clock on every instance, so RTC reads stay
+   * deterministic across netplay peers and rewind/runahead. */
+  int64_t rtc_base_time;
+  u32     rtc_frame_counter;
 };
 
 struct race_state_0x10 /* Older state format */
@@ -201,6 +207,10 @@ static int state_store(race_state_t *rs)
   /* DMA */
   memcpy(&rs->ldcRegs, &ldcRegs, sizeof(ldcRegs));
 
+  /* Real-time clock */
+  rs->rtc_base_time     = (int64_t)rtc_base_time;
+  rs->rtc_frame_counter = rtc_frame_counter;
+
   /* Memory */
   memcpy(rs->ram, mainram, sizeof(rs->ram));
   memcpy(rs->cpuram, &mainram[0x20000], sizeof(rs->cpuram));
@@ -290,6 +300,10 @@ static int state_restore(race_state_t *rs)
 
   /* DMA */
   memcpy(&ldcRegs, &rs->ldcRegs, sizeof(ldcRegs));
+
+  /* Real-time clock */
+  rtc_base_time     = (time_t)rs->rtc_base_time;
+  rtc_frame_counter = rs->rtc_frame_counter;
 
   /* Memory */
   memcpy(mainram, rs->ram, sizeof(rs->ram));

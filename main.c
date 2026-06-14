@@ -129,6 +129,11 @@ void mainemuinit(void)
    /* initialize the TLCS-900H CPU */
    tlcs_init();
 
+   /* (Re)seed the deterministic real-time clock base. This runs on both load
+    * and reset, so the emulated clock starts from a known point and then
+    * advances by counted frames. */
+   rtc_reset();
+
 #if defined(CZ80)
    Z80_Init();
 #endif

@@ -117,6 +117,17 @@ struct retro_core_option_definition option_defs_us[] = {
       },
       "33"
    },
+   {
+      "race_rtc_mode",
+      "Real-Time Clock",
+      "Selects how the emulated real-time clock advances. 'Deterministic' counts emulated frames from a fixed base, so RTC reads are reproducible and safe for netplay, rewind and run-ahead. 'Real Time' reads the host clock directly (a live clock, but non-deterministic).",
+      {
+         { "deterministic", "Deterministic" },
+         { "realtime",      "Real Time" },
+         { NULL, NULL },
+      },
+      "deterministic"
+   },
    { NULL, NULL, NULL, {{0}}, NULL },
 };
 

@@ -194,6 +194,13 @@ static void check_variables(bool first_run)
    /* Reinitialise frameskipping, if required */
    if ((frameskip_type != old_frameskip_type) && !first_run)
       init_frameskip();
+
+   var.key   = "race_rtc_mode";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      rtc_deterministic = strcmp(var.value, "realtime") ? 1 : 0;
+   else
+      rtc_deterministic = 1;
 }
 
 void retro_init(void)
@@ -383,6 +390,9 @@ void retro_run(void)
       check_variables(false);
 
    race_input();
+
+   /* Advance the deterministic RTC by one frame. */
+   rtc_tick_frame();
 
    /* Check whether current frame should be skipped */
    if ((frameskip_type > 0) && retro_audio_buff_active)
