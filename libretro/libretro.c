@@ -433,13 +433,13 @@ void retro_run(void)
    /* Get the number of samples in a frame */
    samplesPerFrame = RETRO_SAMPLE_RATE / 60;
 
-   memset(sampleBuffer, 0, samplesPerFrame * sizeof(int16_t));
-
-   sound_update((uint16_t*)sampleBuffer, samplesPerFrame * sizeof(int16_t)); /* Get sound data */
+   /* sound_update overwrites every sample in the frame, so no clear is
+    * needed first; dac_update then mixes the DAC channel on top. */
+   sound_update((uint16_t*)sampleBuffer, samplesPerFrame * sizeof(int16_t));
    dac_update((uint16_t*)sampleBuffer, samplesPerFrame * sizeof(int16_t));
 
    p = stereoBuffer;
-   
+
    for (i = 0; i < samplesPerFrame; i++)
    {
       p[0] = sampleBuffer[i];
