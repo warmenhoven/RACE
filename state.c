@@ -162,6 +162,23 @@ static int state_store(race_state_t *rs)
   rs->PC_offset = Cz80_Get_PC(RACE_cz80_struc);
 #elif DRZ80
   memcpy(&rs->Z80, &Z80, sizeof(Z80));
+  /* Z80PC/Z80SP and the *_BASE fields hold absolute host addresses into
+   * mainram, and the callback slots hold absolute function addresses; none
+   * of these are valid in another process.  Persist PC/SP as guest-relative
+   * offsets and zero everything that will be re-derived on restore. */
+  rs->Z80.regs.Z80PC      = Z80.regs.Z80PC - Z80.regs.Z80PC_BASE;
+  rs->Z80.regs.Z80SP      = Z80.regs.Z80SP - Z80.regs.Z80SP_BASE;
+  rs->Z80.regs.Z80PC_BASE = 0;
+  rs->Z80.regs.Z80SP_BASE = 0;
+  rs->Z80.regs.z80_rebasePC     = NULL;
+  rs->Z80.regs.z80_rebaseSP     = NULL;
+  rs->Z80.regs.z80_read8        = NULL;
+  rs->Z80.regs.z80_read16       = NULL;
+  rs->Z80.regs.z80_write8       = NULL;
+  rs->Z80.regs.z80_write16      = NULL;
+  rs->Z80.regs.z80_in           = NULL;
+  rs->Z80.regs.z80_out          = NULL;
+  rs->Z80.regs.z80_irq_callback = NULL;
 #endif
 
   /* Sound */
@@ -240,7 +257,18 @@ static int state_restore(race_state_t *rs)
   Z80_ICount = rs->Z80_ICount;
   Cz80_Set_PC(RACE_cz80_struc, rs->PC_offset);
 #elif DRZ80
-  memcpy(&Z80, &rs->Z80, sizeof(Z80));
+  {
+    /* Saved PC/SP are guest-relative offsets (see state_store).  Pull them
+     * out before the memcpy clobbers the live context, copy the register
+     * file, then re-bind all host pointers and rebase PC/SP against the
+     * mainram of *this* process. */
+    unsigned int pc_off = rs->Z80.regs.Z80PC;
+    unsigned int sp_off = rs->Z80.regs.Z80SP;
+    memcpy(&Z80, &rs->Z80, sizeof(Z80));
+    z80_relink_callbacks();
+    Z80.regs.z80_rebasePC(pc_off);
+    Z80.regs.z80_rebaseSP(sp_off);
+  }
 #endif
 
   /* Sound */

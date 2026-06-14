@@ -32,6 +32,7 @@ extern int Z80_Interrupt(void);
 extern void Z80_Cause_Interrupt(int type);
 extern void Z80_Clear_Pending_Interrupts(void);
 extern void Interrupt(void); /* required for DrZ80 int hack */
+extern void z80_relink_callbacks(void); /* re-bind host pointers after state load */
 
 #ifdef __cplusplus
 } /* End of extern "C" */

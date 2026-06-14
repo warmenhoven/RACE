@@ -25,16 +25,16 @@ struct Z80_Regs Z80;
 #define Z80_INT()          Z80.regs.Z80_IRQ = INT_IRQ
 #define Z80_NMI()          Z80.regs.Z80IF |= NMI_IRQ
 
-static unsigned int z80_rebaseSP(unsigned short address)
+unsigned int z80_rebaseSP(unsigned short address)
 {
-   Z80.regs.Z80SP_BASE = (unsigned int)&mainram[0x3000];
+   Z80.regs.Z80SP_BASE = (uintptr_t)&mainram[0x3000];
    Z80.regs.Z80SP = Z80.regs.Z80SP_BASE + address;
    return Z80.regs.Z80SP_BASE + address;
 }
 
-static unsigned int z80_rebasePC(unsigned short address)
+unsigned int z80_rebasePC(unsigned short address)
 {
-   Z80.regs.Z80PC_BASE = (unsigned int)&mainram[0x3000];
+   Z80.regs.Z80PC_BASE = (uintptr_t)&mainram[0x3000];
    Z80.regs.Z80PC = Z80.regs.Z80PC_BASE + address;
    return Z80.regs.Z80PC_BASE + address;
 }
@@ -42,6 +42,23 @@ static unsigned int z80_rebasePC(unsigned short address)
 static void z80_irq_callback(void)
 {
    Z80.regs.Z80_IRQ = 0x00;
+}
+
+/* Re-bind all host-address fields (PC/SP bases and the I/O callback
+ * pointers) of the live Z80 context to the current process image.  Used
+ * after loading a savestate, whose stored pointers belong to whatever
+ * process wrote the state and are meaningless here. */
+void z80_relink_callbacks(void)
+{
+   Z80.regs.z80_rebasePC     = z80_rebasePC;
+   Z80.regs.z80_rebaseSP     = z80_rebaseSP;
+   Z80.regs.z80_read8        = z80MemReadB;
+   Z80.regs.z80_read16       = z80MemReadW;
+   Z80.regs.z80_write8       = DrZ80ngpMemWriteB;
+   Z80.regs.z80_write16      = DrZ80ngpMemWriteW;
+   Z80.regs.z80_in           = DrZ80ngpPortReadB;
+   Z80.regs.z80_out          = DrZ80ngpPortWriteB;
+   Z80.regs.z80_irq_callback = z80_irq_callback;
 }
 
 
