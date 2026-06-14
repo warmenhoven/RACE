@@ -169,14 +169,30 @@ static _u16 sample_chip_noise(void)
 
 /* ============================================================================= */
 
+/* One-pole DC-blocking high-pass removes the PSG's DC offset so the output is
+ * centered (matching the Mednafen/beetle-ngp reference) instead of unipolar.
+ * y[n] = x[n] - x[n-1] + R*y[n-1], R for a ~10 Hz corner @ 44100 (below all
+ * musical content, so bass is preserved). A double accumulator avoids the
+ * fixed-point truncation bias that would otherwise reintroduce a DC offset. */
+static double dcblock_xprev = 0.0;
+static double dcblock_yprev = 0.0;
+#define DCBLOCK_R 0.99858
+
 void sound_update(_u16* chip_buffer, int length_bytes)
 {
    length_bytes >>= 1; /* turn it into words */
    while (length_bytes)
    {
-      /* Mix a mono track out of: (Tone + Noise) >> 1
-       * Write it to the sound buffer */
-      *(chip_buffer++) = (sample_chip_tone() + sample_chip_noise()) >> 1;
+      /* Mix a mono track out of: (Tone + Noise) >> 1, then remove DC. */
+      double x = (double)((sample_chip_tone() + sample_chip_noise()) >> 1);
+      double y = x - dcblock_xprev + DCBLOCK_R * dcblock_yprev;
+      int s;
+      dcblock_xprev = x;
+      dcblock_yprev = y;
+      s = (int)(y >= 0.0 ? y + 0.5 : y - 0.5);
+      if (s >  32767) s =  32767;
+      if (s < -32768) s = -32768;
+      *(chip_buffer++) = (_u16)(int16_t)s;
 
       length_bytes--;
    }
@@ -337,8 +353,17 @@ void dac_update(_u16* dac_buffer, int length_bytes)
 {
 	while (length_bytes > 1)
 	{
-		/* Copy then clear DAC data */
-		*(dac_buffer++) |= dacBufferL[dacLBufferRead];
+		/* Mix the DAC sample onto the PSG output. A clamped additive mix is
+		 * correct; the previous bitwise OR discarded the DAC contribution
+		 * whenever its bits overlapped the PSG sample (and produced garbage
+		 * for negative DAC values). */
+		{
+			int s = (int)(int16_t)*dac_buffer + (int)(int16_t)dacBufferL[dacLBufferRead];
+			if (s >  32767) s =  32767;
+			if (s < -32768) s = -32768;
+			*dac_buffer = (_u16)(int16_t)s;
+		}
+		dac_buffer++;
 		dacBufferL[dacLBufferRead] = 0;  /* silence? */
 
 		length_bytes -= 2;	/* 1 byte = 8 bits */
