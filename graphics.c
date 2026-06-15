@@ -620,7 +620,7 @@ void myGraphicsBlitLine(unsigned char render)  /* NOTA */
     {
         if(render)
         {
-			unsigned short* draw = &drawBuffer[(*scanlineY)*(screen->pitch)];
+			unsigned short* draw = &drawBuffer[(*scanlineY)*(screen->w)];
 			unsigned short bgcol;
             unsigned int bw = (m_emuInfo.machine == NGP);
             unsigned short OOWCol = NGPC_TO_RGB565(oowTable[*oowSelect & 0x07]);
@@ -744,21 +744,11 @@ void myGraphicsBlitLine(unsigned char render)  /* NOTA */
  *
  */
 
-/* Point the renderer at a specific destination buffer and scanline stride
- * (in pixels). Used to render straight into the frontend's software
- * framebuffer when one is available, falling back to screen->pixels. */
-void graphics_set_render_target(void *pixels, int pitch_pixels)
-{
-    drawBuffer    = (unsigned short*)pixels;
-    screen->pitch = pitch_pixels;
-}
-
 BOOL graphics_init(void)
 {
     palette_init = palette_init16;
     palette_init(RMASK, GMASK, BMASK);
     drawBuffer = (unsigned short*)screen->pixels;
-    screen->pitch = screen->w;
 
     switch(m_emuInfo.machine)
     {

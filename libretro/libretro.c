@@ -106,10 +106,6 @@ static void init_frameskip(void)
 static int RETRO_SAMPLE_RATE = 44100;
 
 struct ngp_screen* screen;
-/* The buffer the current frame was rendered into: either the frontend's
- * software framebuffer (zero-copy) or screen->pixels. */
-static void *render_target = NULL;
-static bool  use_fb        = false;
 int setting_ngp_language; /* 0x6F87 - language */
 
 int gfx_hacks = 0;
@@ -141,8 +137,8 @@ unsigned retro_api_version(void)
 
 void graphics_paint(unsigned char render)
 {
-   video_cb((bool)render ? render_target : NULL,
-         screen->w, screen->h, screen->pitch << 1);
+   video_cb((bool)render ? screen->pixels : NULL,
+         screen->w, screen->h, FB_WIDTH << 1);
 }
 
 static void check_variables(bool first_run)
@@ -459,34 +455,6 @@ void retro_run(void)
       update_audio_latency = false;
    }
 
-   /* Try to render directly into the frontend's framebuffer (zero-copy). Only
-    * worthwhile when we are actually going to render this frame. If the call
-    * is unsupported, or the frontend hands back a buffer whose format isn't the
-    * RGB565 the renderer emits, fall back to our own screen->pixels. */
-   if (!skipFrame)
-   {
-      struct retro_framebuffer fb;
-      fb.width        = FB_WIDTH;
-      fb.height       = FB_HEIGHT;
-      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
-      use_fb          = false;
-      if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
-            && fb.format == RETRO_PIXEL_FORMAT_RGB565
-            && fb.width  >= FB_WIDTH
-            && fb.height >= FB_HEIGHT
-            && fb.data)
-      {
-         use_fb        = true;
-         render_target = fb.data;
-         graphics_set_render_target(fb.data, (int)(fb.pitch >> 1));
-      }
-      else
-      {
-         render_target = screen->pixels;
-         graphics_set_render_target(screen->pixels, FB_WIDTH);
-      }
-   }
-
    tlcs_execute(CPU_FREQ / 60, skipFrame);
 
    /* Get the number of samples in a frame */
@@ -614,10 +582,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
    screen->w      = FB_WIDTH;
    screen->h      = FB_HEIGHT;
-   screen->pitch  = FB_WIDTH;
 
    screen->pixels = calloc(1, FB_WIDTH * FB_HEIGHT * 2);
-   render_target  = screen->pixels;
 
    if (!screen->pixels)
    {
