@@ -246,12 +246,13 @@ static void check_variables(bool first_run)
       {
          if (!strcmp(var.value, "auto"))
          {
-            float target = 0.0f;
+            /* GET_TARGET_SAMPLE_RATE writes an unsigned int (Hz), not a float. */
+            unsigned target = 0;
             if (environ_cb(RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE, &target)
-                  && target > 0.0f)
+                  && target > 0)
             {
                /* Pick the nearest supported rate to the host's target. */
-               if (target >= (44100.0f + 48000.0f) / 2.0f)
+               if (target >= (44100 + 48000) / 2)
                   RETRO_SAMPLE_RATE = 48000;
                else
                   RETRO_SAMPLE_RATE = 44100;
