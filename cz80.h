@@ -28,7 +28,16 @@ extern "C" {
 #define CZ80_FETCH_SFT          (16 - CZ80_FETCH_BITS)
 #define CZ80_FETCH_BANK         (1 << CZ80_FETCH_BITS)
 
+/* Endianness follows the project-wide MSB_FIRST macro (defined by the build for
+ * big-endian targets such as the PPC Wii/Wii U/GameCube cores) so there is a
+ * single source of truth. On those platforms the register unions and word
+ * handlers below take their big-endian (#else) branches; everywhere else this
+ * is little-endian as before. */
+#ifdef MSB_FIRST
+#define CZ80_LITTLE_ENDIAN      0
+#else
 #define CZ80_LITTLE_ENDIAN      1
+#endif
 #define CZ80_USE_JUMPTABLE      1
 #define CZ80_IRQ_CYCLES			1
 #define CZ80_SIZE_OPT           1
