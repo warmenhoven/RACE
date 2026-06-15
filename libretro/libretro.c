@@ -9,7 +9,6 @@
 #include "../neopopsound.h"
 #include "../neopop_blip.h"
 #include "../sound.h"
-#include "../input.h"
 #include "../flash.h"
 #include "../tlcs900h.h"
 #include "../race-memory.h"
@@ -36,6 +35,8 @@ static retro_input_state_t input_state_cb;
 
 #define FB_WIDTH 160
 #define FB_HEIGHT 152
+
+uint8_t ngpInputState = 0;
 
 /* Frameskipping Support */
 
@@ -673,6 +674,7 @@ void retro_unload_game(void)
       free(screen);
       screen = NULL;
    }
+   ngpInputState = 0;
 }
 
 void retro_cheat_reset(void)

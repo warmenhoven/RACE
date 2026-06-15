@@ -15,7 +15,6 @@
 #include "flash.h"
 #include "race-memory.h"
 #include "tlcs900h.h"
-#include "input.h"
 
 #include "graphics.h"
 #include "tlcs900h.h"
@@ -31,9 +30,6 @@
 #include "z80.h"
 #endif
 #endif
-
-/* address where the state of the input device(s) is stored */
-unsigned char	ngpInputState = 0;
 
 extern int finscan;
 extern int language;

@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-extern unsigned char	ngpInputState;
+extern uint8_t	ngpInputState;
 
 /* Maximum ROM size is 4 megabytes */
 #define MAINROM_SIZE_MAX (4*1024*1024)

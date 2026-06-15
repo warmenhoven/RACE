@@ -104,43 +104,25 @@ gen_regsXHL3, gen_regsXIX, gen_regsXIY, gen_regsXIZ, gen_regsXSP,
 gen_regsSP, gen_regsXSSP, gen_regsXNSP;
 
 unsigned int gen_regsPC, gen_regsSR;
-//#define gen_regsSRb ((unsigned char *)&gen_regsSR)[0]//lsbyte of gen_regsSR
 
-// declare struct for easy access to flags of flag register
-// lower byte of SR: F
-//#define C ((*(struct SR0 *)(&gen_regsSR)).C0)
-//#define N ((*(struct SR0 *)(&gen_regsSR)).N0)
-//#define V ((*(struct SR0 *)(&gen_regsSR)).V0)
-//#define H ((*(struct SR0 *)(&gen_regsSR)).H0)
-//#define Z ((*(struct SR0 *)(&gen_regsSR)).Z0)
-//#define S ((*(struct SR0 *)(&gen_regsSR)).S0)
 #define CF 0x01
 #define NF 0x02
 #define VF 0x04
-//#define D0 0x08
 #define HF 0x10
-//#define D1 0x20
 #define ZF 0x40
 #define SF 0x80
-// upper byte of SR
-//#define RFP  ((*(struct SR0 *)(&gen_regsSR)).RFP0)
-//#define MAXM ((*(struct SR0 *)(&gen_regsSR)).MAXM0)
-//#define IFF  ((*(struct SR0 *)(&gen_regsSR)).IFF0)
-//#define SYSM ((*(struct SR0 *)(&gen_regsSR)).SYSM0)
-// definition for F'
+/* definition for F' */
 unsigned char F2;
 
 unsigned char *my_pc = NULL;
 
-
-
-// pointers to all register(parts) that could be accessed in byte mode
+/* pointers to all register(parts) that could be accessed in byte mode */
 unsigned char *allregsB[256];
 unsigned char *cregsB[8];
-// pointers to all register(parts) that could be accessed in word mode
+/* pointers to all register(parts) that could be accessed in word mode */
 unsigned short *allregsW[256];
 unsigned short *cregsW[8];
-// pointers to all register(parts) that could be accessed in long mode
+/* pointers to all register(parts) that could be accessed in long mode */
 unsigned int *allregsL[256];
 unsigned int *cregsL[8];
 
@@ -157,27 +139,29 @@ int DMAstate;
 // 8 -  768 kHz
 //16 -  384 kHz
 int tlcsClockMulti;
-//
-// is there an interrupt we need to honor?
+
+/* is there an interrupt we need to honor? */
 #define INT_QUEUE_MAX 4
+
 unsigned char interruptPendingLevel;
 unsigned char pendingInterrupts[7][INT_QUEUE_MAX];
 
-// used during decoding of instructions, will hold the arguments for the operands
+/* used during decoding of instructions, will hold the 
+ * arguments for the operands */
 unsigned int mem;
 unsigned char *regB, memB;
 unsigned short *regW, memW;
 unsigned int *regL, memL;
 
-// used during instruction decode
-// lastbyte - to keep track of the last read byte; used when extra information is stored in the
-//            opcode itself.
+/* used during instruction decode
+ * lastbyte - to keep track of the last read byte; 
+ * used when extra information is stored in the
+ * opcode itself. */
 unsigned char opcode;
 unsigned char lastbyte;
 
-// wrapper
+/* wrapper */
 int  memoryCycles;
-
 
 static INLINE unsigned char mem_readB(unsigned int addr)
 {
@@ -923,7 +907,7 @@ int popsr(void) // POP SR   00000011
 
 int popF(void)  // POP F   00011001
 {
-    gen_regsSR = (gen_regsSR&0xff00)|mem_readB(gen_regsXSP);
+    gen_regsSR = (gen_regsSR&0xff00) | mem_readB(gen_regsXSP);
     gen_regsXSP+=1;
     return 4;
 }
@@ -1101,12 +1085,12 @@ int ldi(void)  // LDI (XDE+),(XHL+) 10000011 00010000
     if (opcode&2)
     {
         // XDE/XHL
-        mem_writeB((*cregsL[2])++,mem_readB((*cregsL[3])++));
+        mem_writeB((*cregsL[2])++, mem_readB((*cregsL[3])++));
     }
     else
     {
         // XIX/XIY
-        mem_writeB(gen_regsXIX++,mem_readB(gen_regsXIY++));
+        mem_writeB(gen_regsXIX++, mem_readB(gen_regsXIY++));
     }
     *cregsW[1]-=1; // BC
     gen_regsSR = gen_regsSR & ~(HF|VF|NF);
@@ -7619,7 +7603,7 @@ static void tlcsTI0(void)
 
    if (gfx_hacks==1)
    {
-      //Arregla Samurai 2    
+      /* Arregla Samurai 2 */
       if (mainrom[0x000020] == 0x30)
       {
          contador++;
@@ -7671,15 +7655,15 @@ static int tlcs_step(void)
     if (interruptPendingLevel > (unsigned char)((gen_regsSR & 0x7000)>>12))
     {
         int i;
-        // push PC
-		tlcsFastMemWriteL(gen_regsXSP-=4,gen_regsPC);
-        // push SR
-		tlcsFastMemWriteW(gen_regsXSP-=2,gen_regsSR);
+        /* push PC */
+	tlcsFastMemWriteL(gen_regsXSP-=4,gen_regsPC);
+        /* push SR */
+	tlcsFastMemWriteW(gen_regsXSP-=2,gen_regsSR);
         gen_regsSR = (gen_regsSR & 0x8fff) | (interruptPendingLevel<<12);
         gen_regsPC = mem_readL(0x00FFFF00 + pendingInterrupts[interruptPendingLevel-1][0]);
         my_pc = get_address(gen_regsPC);
 
-        // remove interrupt vector from interrupt queue
+        /* remove interrupt vector from interrupt queue */
         for(i=1; i<INT_QUEUE_MAX; i++)
         {
             pendingInterrupts[interruptPendingLevel-1][i-1] =
