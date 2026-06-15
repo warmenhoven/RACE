@@ -321,9 +321,6 @@ void writeSaveGameFile(void)
 
    filestream_close(ngfFile);
    needToWriteFile = 0;
-#ifdef TARGET_GP2X
-   sync();
-#endif
 }
 
 /* read the save-game file and overlay it onto mainrom */

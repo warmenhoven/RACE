@@ -109,18 +109,8 @@ gen_regsXDE2, gen_regsXHL2, gen_regsXWA3, gen_regsXBC3, gen_regsXDE3,
 gen_regsXHL3, gen_regsXIX, gen_regsXIY, gen_regsXIZ, gen_regsXSP,
 gen_regsSP, gen_regsXSSP, gen_regsXNSP;
 
-#ifdef TARGET_GP2X
-//it's defined in types.h
-#ifndef GENREGSPC_AS_REG
-unsigned int gen_regsPC;
-#endif
-#ifndef GENREGSSR_AS_REG
-unsigned int gen_regsSR;
-#endif
-#else
 unsigned int gen_regsPC, gen_regsSR;
 //#define gen_regsSRb ((unsigned char *)&gen_regsSR)[0]//lsbyte of gen_regsSR
-#endif
 
 // declare struct for easy access to flags of flag register
 //struct SR0 {
@@ -160,11 +150,7 @@ unsigned int gen_regsPC, gen_regsSR;
 // definition for F'
 unsigned char F2;
 
-#ifdef TARGET_GP2X
-//it's defined in types.h
-#else
 unsigned char *my_pc = NULL;
-#endif
 
 //unsigned char *saved_my_pc;
 
@@ -207,9 +193,7 @@ unsigned int *regL, memL;
 // used during instruction decode
 // lastbyte - to keep track of the last read byte; used when extra information is stored in the
 //            opcode itself.
-#ifndef TARGET_GP2X
 unsigned char opcode;
-#endif
 unsigned char lastbyte;
 //unsigned char opcode1, opcode2;
 
@@ -396,64 +380,13 @@ static INLINE void tlcsMemWriteL(unsigned int addr, unsigned int data)
 
 static INLINE unsigned char readbyte(void)
 {
-#ifdef TARGET_GP2X
-    unsigned char __val asm("r0");//%0 and r0 are the same, now
-#ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "ldrb %0, [%2], #1\n\t"
-        "add    %1, %1, #1"
-        : "=r" (__val)
-        : "r" (gen_regsPC), "r" (my_pc)
-        : );
-#else
-
-    asm volatile(
-        "ldr r3, %1\n\t"
-        "ldrb %0, [%2], #1\n\t"
-        "add r3, r3, #1\n\t"
-        "str r3, %1"
-    : "=r" (__val)
-                : "m" (gen_regsPC), "r" (my_pc)
-                : "r3");
-#endif
-
-    return __val;
-#else
 
     gen_regsPC++;
     return *(my_pc++);
-#endif
 }
 
 static INLINE unsigned char readbyteSetLastbyte(void)
 {
-#ifdef TARGET_GP2X
-    unsigned char __val asm("r0");//%0 and r0 are the same, now
-#ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "ldrb %0, [%3], #1\n\t"
-        "ldrb %1, [%3], #1\n\t"
-        "add %2, %2, #2\n\t"
-    : "=r" (__val), "=r" (lastbyte)
-                : "r" (gen_regsPC), "r" (my_pc)
-                : );
-#else
-
-    asm volatile(
-        "ldr r3, %2\n\t"
-        "ldrb %0, [%3], #1\n\t"
-        "ldrb %1, [%3], #1\n\t"
-        "add r3, r3, #2\n\t"
-        "str r3, %2"
-    : "=r" (__val), "=r" (lastbyte)
-                : "m" (gen_regsPC), "r" (my_pc)
-                : "r3");
-#endif
-
-    return __val;
-#else
 
     register unsigned char i;
     register unsigned short j;
@@ -474,39 +407,10 @@ static INLINE unsigned char readbyteSetLastbyte(void)
         return j;
     }
     return i;
-#endif
 }
 
 static INLINE unsigned short readword(void)
 {
-#ifdef TARGET_GP2X
-    unsigned short __val asm("r0");//%0 and r0 are the same, now
-#ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "ldrb %0, [%2], #1\n\t"
-        "ldrb r2, [%2], #1\n\t"
-        "add %1, %1, #2\n\t"
-        "orr %0, %0, r2, asl #8"
-    : "=r" (__val)
-                : "r" (gen_regsPC), "r" (my_pc)
-                : "r2");
-#else
-
-    asm volatile(
-        "ldr r3, %1\n\t"
-        "ldrb %0, [%2], #1\n\t"
-        "ldrb r2, [%2], #1\n\t"
-        "add r3, r3, #2\n\t"
-        "str r3, %1\n\t"
-        "orr %0, %0, r2, asl #8"
-    : "=r" (__val)
-                : "m" (gen_regsPC), "r" (my_pc)
-                : "r2","r3");
-#endif
-
-    return __val;
-#else
 
     register unsigned short i;
 
@@ -526,42 +430,10 @@ static INLINE unsigned short readword(void)
     }
 
     return i;
-#endif
 }
 
 static INLINE unsigned short readwordSetLastbyte(void)
 {
-#ifdef TARGET_GP2X
-    unsigned short __val asm("r0");//%0 and r0 are the same, now
-#ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "ldrb %0, [%3], #1\n\t"
-        "ldrb r2, [%3], #1\n\t"
-        "ldrb %1, [%3], #1\n\t"
-        "add %2, %2, #3\n\t"
-        "orr %0, %0, r2, asl #8"
-    : "=r" (__val), "=r" (lastbyte)
-                : "r" (gen_regsPC), "r" (my_pc)
-                : "r2");
-#else
-
-    asm volatile(
-        "ldr r3, %2\n\t"
-        "ldrb %0, [%3], #1\n\t"
-        "ldrb r2, [%3], #1\n\t"
-        "ldrb %1, [%3], #1\n\t"
-        "add r3, r3, #3\n\t"
-        "str r3, %2\n\t"
-        "orr %0, %0, r2, asl #8"
-    : "=r" (__val), "=r" (lastbyte)
-                : "m" (gen_regsPC), "r" (my_pc)
-                : "r2","r3");
-#endif
-
-    return __val;
-
-#else
 
     register unsigned short i;
     register unsigned int j;
@@ -586,7 +458,6 @@ static INLINE unsigned short readwordSetLastbyte(void)
     }
 
     return i;
-#endif
 }
 
 /*
@@ -598,47 +469,6 @@ Or, we could just read a dword and forget about the MSB
 */
 static INLINE unsigned int read24(void)
 {
-#ifdef TARGET_GP2X
-    register unsigned int __val asm("r0");//%0 and r0 are the same, now
-
-#ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "add %2, %2, #3\n"
-        "bic r1,%1,#3 \n"
-        "ldmia r1,{r0,r3} \n"
-        "ands r1,%1,#3 \n"
-        "movne r2,r1,lsl #3 \n"
-        "movne r0,r0,lsr r2 \n"
-        "rsbne r1,r2,#32 \n"
-        "orrne r0,r0,r3,lsl r1\n"
-        "and    r0, r0, #0xFFFFFF\n"
-        "add    %1, %1, #3"
-    : "=r" (__val)
-                : "r"(my_pc), "r"(gen_regsPC)
-                : "r1","r2","r3");
-#else
-
-    asm volatile(
-        "ldr r3, %2\n"
-        "add r3, r3, #3\n"
-        "str r3, %2\n"
-        "bic r1,%1,#3 \n"
-        "ldmia r1,{r0,r3} \n"
-        "ands r1,%1,#3 \n"
-        "movne r2,r1,lsl #3 \n"
-        "movne r0,r0,lsr r2 \n"
-        "rsbne r1,r2,#32 \n"
-        "orrne r0,r0,r3,lsl r1\n"
-        "and    r0, r0, #0xFFFFFF\n"
-        "add    %1, %1, #3"
-    : "=r" (__val)
-                : "r"(my_pc), "m"(gen_regsPC)
-                : "r1","r2","r3");
-#endif
-
-    return __val;
-#else
 
     register unsigned int i;
 
@@ -658,56 +488,10 @@ static INLINE unsigned int read24(void)
     }
 
     //return i;
-#endif
 }
 
 static INLINE unsigned int read24SetLastbyte(void)
 {
-#ifdef TARGET_GP2X
-    register unsigned int __val asm("r0");//%0 and r0 are the same, now
-
-#ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "add %3, %3, #4\n"
-        "bic r1,%2,#3 \n"
-        "ldmia r1,{r0,r3} \n"
-        "ands r1,%2,#3 \n"
-        "movne r2,r1,lsl #3 \n"
-        "movne r0,r0,lsr r2 \n"
-        "rsbne r1,r2,#32 \n"
-        "orrne r0,r0,r3,lsl r1\n"
-        "and    %1, r0, #0xFF000000\n"
-        "mov    %1, %1, lsr #24\n"
-        "and    r0, r0, #0x00FFFFFF\n"
-        "add    %2, %2, #4"
-    : "=r" (__val), "=r" (lastbyte)
-                : "r"(my_pc), "r"(gen_regsPC)
-                : "r1","r2","r3");
-#else
-
-    asm volatile(
-        "ldr r3, %3\n"
-        "add r3, r3, #4\n"
-        "str r3, %3\n"
-        "bic r1,%2,#3 \n"
-        "ldmia r1,{r0,r3} \n"
-        "ands r1,%2,#3 \n"
-        "movne r2,r1,lsl #3 \n"
-        "movne r0,r0,lsr r2 \n"
-        "rsbne r1,r2,#32 \n"
-        "orrne r0,r0,r3,lsl r1\n"
-        "and    %1, r0, #0xFF000000\n"
-        "mov    %1, %1, lsr #24\n"
-        "and    r0, r0, #0x00FFFFFF\n"
-        "add    %2, %2, #4"
-    : "=r" (__val), "=r" (lastbyte)
-                : "r"(my_pc), "m"(gen_regsPC)
-                : "r1","r2","r3");
-#endif
-
-    return __val;
-#else
 
     register unsigned int i;
 
@@ -731,50 +515,10 @@ static INLINE unsigned int read24SetLastbyte(void)
     }
 
     //return i;
-#endif
 }
 
 static INLINE unsigned int readlong(void)
 {
-#ifdef TARGET_GP2X
-    register unsigned int __val asm("r0");//%0 and r0 are the same, now
-
-#ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "add %2, %2, #4\n"
-        "bic r1,%1,#3 \n"
-        "ldmia r1,{r0,r3} \n"
-        "ands r1,%1,#3 \n"
-        "movne r2,r1,lsl #3 \n"
-        "movne r0,r0,lsr r2 \n"
-        "rsbne r1,r2,#32 \n"
-        "orrne r0,r0,r3,lsl r1\n"
-        "add    %1, %1, #4"
-    : "=r" (__val)
-                : "r"(my_pc), "r"(gen_regsPC)
-                : "r1","r2","r3");
-#else
-
-    asm volatile(
-        "ldr r3, %2\n"
-        "add r3, r3, #4\n"
-        "str r3, %2\n"
-        "bic r1,%1,#3 \n"
-        "ldmia r1,{r0,r3} \n"
-        "ands r1,%1,#3 \n"
-        "movne r2,r1,lsl #3 \n"
-        "movne r0,r0,lsr r2 \n"
-        "rsbne r1,r2,#32 \n"
-        "orrne r0,r0,r3,lsl r1\n"
-        "add    %1, %1, #4"
-    : "=r" (__val)
-                : "r"(my_pc), "m"(gen_regsPC)
-                : "r1","r2","r3");
-#endif
-
-    return __val;
-#else
 
     register unsigned int i;
 
@@ -795,103 +539,32 @@ static INLINE unsigned int readlong(void)
     }
 
     return i;
-#endif
 }
 
 static INLINE void doJumpByte(void)
 {
-#ifdef TARGET_GP2X
- #ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "ldrsb r0, [%1]\n\t"
-        "adds    r0, r0, #1\n\t"
-        "adds    %0, %0, r0\n\t"
-        "adds    %1, %1, r0"
-        :
-        : "r" (gen_regsPC), "r" (my_pc)
-        : "r0");
-
- #else
- #error doJumpByte not implemented
- #endif
-
-#else
     signed char d8 = readbyte();
     gen_regsPC+=d8;
     my_pc+=d8;
-#endif
 }
 
 static INLINE void skipJumpByte(void)
 {
-#ifdef TARGET_GP2X
- #ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "add    %0, %0, #1\n\t"
-        "add    %1, %1, #1"
-        :
-        : "r" (gen_regsPC), "r" (my_pc)
-        :);
-
- #else
- #error skipJumpByte not implemented
- #endif
-
-#else
     ++gen_regsPC;
     ++my_pc;
-#endif
 }
 
 static INLINE void doJumpWord(void)
 {
-#ifdef TARGET_GP2X
- #ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "ldrsb    r0, [%1,#1]\n\t"
-        "ldrb    r1, [%1]\n\t"
-        "orr     r0, r1, r0, asl #8\n\t"
-        "add    r0, r0, #2\n\t"
-        "add    %0, %0, r0\n\t"
-        "add    %1, %1, r0"
-        :
-        : "r" (gen_regsPC), "r" (my_pc)
-        : "r0", "r1");
-
- #else
- #error doJumpWord not implemented
- #endif
-
-#else
     signed short d16 = readword();
     gen_regsPC+=d16;
     my_pc+=d16;
-#endif
 }
 
 static INLINE void skipJumpWord(void)
 {
-#ifdef TARGET_GP2X
- #ifdef GENREGSPC_AS_REG
-
-    asm volatile(
-        "add    %0, %0, #2\n\t"
-        "add    %1, %1, #2"
-        :
-        : "r" (gen_regsPC), "r" (my_pc)
-        :);
-
- #else
- #error skipJumpWord not implemented
- #endif
-
-#else
     gen_regsPC+=2;
     my_pc+=2;
-#endif
 }
 
 
@@ -6166,44 +5839,10 @@ int retd(void)  // RETD d16    00001111 xxxxxxxx xxxxxxxx
 
 int reti(void)  // RETI     00000111
 {
-#ifdef TARGET_GP2X
-    register byte *gA asm("r4");
-    register unsigned int localXSP = gen_regsXSP;
-
-    gA = get_address(localXSP);
-    localXSP += 6;
-    gen_regsXSP = localXSP;
-
-
-    if(gA == 0)
-    {
-        gen_regsSR = gen_regsPC = 0;
-    }
-    else
-    {
-        asm volatile(
-            "ldrb %0, [%2], #1\n"
-            "ldrb r2, [%2], #1\n"
-            "orr %0, %0, r2, asl #8\n"
-            "bic r1,%2,#3 \n"
-            "ldmia r1,{r0,r3} \n"
-            "ands r1,%2,#3 \n"
-            "movne r2,r1,lsl #3 \n"
-            "movne r0,r0,lsr r2 \n"
-            "rsbne r1,r2,#32 \n"
-            "orrne r0,r0,r3,lsl r1\n"
-            "mov    %1,r0"
-        : "=r"(gen_regsSR), "=r"(gen_regsPC)
-                    : "r"(gA)
-                    : "r0", "r1","r2","r3");
-    }
-
-#else
     gen_regsSR = mem_readW(gen_regsXSP);
     gen_regsXSP+= 2;
     gen_regsPC = mem_readL(gen_regsXSP);
     gen_regsXSP+= 4;
-#endif
 
     my_pc = get_address(gen_regsPC);
     set_cregs();

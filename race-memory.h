@@ -165,55 +165,12 @@ static INLINE unsigned char tlcsMemReadB(unsigned int addr)
 /* read a word from a memory address (addr) */
 static INLINE unsigned short tlcsMemReadW(unsigned int addr)
 {
-#ifdef TARGET_GP2X
-   register unsigned short i asm("r0");
-   register unsigned char *gA asm("r1");
-
-   gA = get_address(addr);
-
-   if(gA == 0)
-      return 0;
-
-   asm volatile(
-         "ldrb	%0, [%1]\n\t"
-         "ldrb	r2, [%1, #1]\n\t"
-         "orr	%0, %0, r2, asl #8"
-         : "=r" (i)
-         : "r" (gA)
-         : "r2");
-
-   return i;
-#else
    return tlcsMemReadB(addr) | (tlcsMemReadB(addr+1) << 8);
-#endif
 }
 
 /* read a long word from a memory address (addr) */
 static INLINE unsigned int tlcsMemReadL(unsigned int addr)
 {
-#ifdef TARGET_GP2X
-   register unsigned int i asm("r0");
-   register unsigned char *gA asm("r4");
-
-   gA = get_address(addr);
-
-   if(gA == 0)
-      return 0;
-
-   asm volatile(
-         "bic	r1,%1,#3	\n"
-         "ldmia	r1,{r0,r3}	\n"
-         "ands	r1,%1,#3	\n"
-         "movne	r2,r1,lsl #3	\n"
-         "movne	r0,r0,lsr r2	\n"
-         "rsbne	r1,r2,#32	\n"
-         "orrne	r0,r0,r3,lsl r1"
-         : "=r"(i)
-         : "r"(gA)
-         : "r1","r2","r3");
-
-   return i;
-#else
    unsigned int i;
    unsigned char *gA = get_address(addr);
 
@@ -226,7 +183,6 @@ static INLINE unsigned int tlcsMemReadL(unsigned int addr)
    i |= (unsigned int)(*gA) << 24;
 
    return i;
-#endif
 }
 
 /* write a byte (data) to a memory address (addr) */
