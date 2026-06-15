@@ -447,33 +447,9 @@ void mem_init(void)
             cpurom[0x3202]=0xf4;//from Koyote
             cpurom[0x3203]=0x6b;//from Koyote
 
-			//koyote.bin handling
+            //koyote.bin handling
             memcpy(mainram,koyote_bin,KOYOTE_BIN_SIZE/*12*1024*/);
 
-			/* What is this code, and why is it disabled?
-			 * koyote.bin is supposed to be a memory dump from the
-			 * console immediately after a boot (i.e. bios has executed
-			 * all of its routines and the ROM has just loaded, giving
-			 * us a fresh RAM post-bios). But it seems we already have
-			 * this data in koyote_bin. So why were we reading from
-			 * file here? And if this is legacy code (replaced by
-			 * koyote_bin), why not outright delete it? */
-#if 0
-			 RFILE *fp = filestream_open("koyote.bin", RETRO_VFS_FILE_ACCESS_READ,
-					RETRO_VFS_FILE_ACCESS_HINT_NONE)
-            if (fp!=NULL)
-			{
-				filestream_read(fp, mainram, KOYOTE_BIN_SIZE/*12*1024*/);
-				filestream_close(fp);
-			}
-			else
-			{
-				// setup interrupt vectors in RAM
-				for(i=0; i<18; i++) {
-					*((unsigned int *)(&mainram[0x2FB8+4*i])) = (unsigned int)0x00FFF800;
-				}
-			}
-#endif
             // setup the additional CPU ram
             // interrupt priorities, timer settings, transfer settings, etc
             for(i=0; i<sizeof(ngpcpuram); i++)

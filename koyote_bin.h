@@ -1,3 +1,7 @@
+/* koyote_bin: a 12 KB snapshot of NGPC main RAM taken immediately after a real
+ * BIOS has finished booting. It is copied into mainram in mem_init() when no
+ * real BIOS image is provided, so games can boot without one. This data is
+ * embedded directly in the core (there is no external koyote.bin file). */
 #define KOYOTE_BIN_SIZE 12288
 const unsigned char koyote_bin[KOYOTE_BIN_SIZE] =
 {
