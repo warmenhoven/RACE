@@ -60,6 +60,7 @@ extern unsigned short *oowTable;
 extern unsigned char *color_switch;
 
 BOOL graphics_init(void);
+void graphics_set_render_target(void *pixels, int pitch_pixels);
 void graphics_paint(unsigned char render);
 void graphicsSetDarkFilterLevel(unsigned filterLevel);
 /* new renderer (NeoGeo Pocket (Color)) */
@@ -80,7 +81,9 @@ extern unsigned char *scanlineY;
 
 struct ngp_screen
 {
-   int w, h;                 
+   int w, h;
+   int pitch;                /* scanline stride in pixels (= w, unless the
+                                frontend's software framebuffer dictates otherwise) */
    void *pixels;
 };
 
