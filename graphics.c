@@ -95,15 +95,6 @@ unsigned short p2[16] = {
 #define BLIT_X_OFFSET 8
 #define BLIT_Y_OFFSET 8
 #define BLIT_OFFSET (BLIT_X_OFFSET + (BLIT_Y_OFFSET*SIZEX))
-#define BLIT_WIDTH (160)
-#define BLIT_HEIGHT (152)
-#define SCREEN_X_OFFSET ((screen->w - BLIT_WIDTH)/2)
-#define SCREEN_Y_OFFSET ((screen->h - BLIT_HEIGHT)/2)
-
-/* (32)  32 is good for 480x272  -64 is for 320x240 (squish) */
-#define PSP_FUDGE 0
-/* extra fudge factor for PSP? */
-#define SCREEN_OFFET (SCREEN_X_OFFSET + (SCREEN_Y_OFFSET*(screen->w+PSP_FUDGE)))
 
 /*
  *
@@ -1077,11 +1068,7 @@ void myGraphicsBlitLine(unsigned char render)  /* NOTA */
     {
         if(render)
         {
-#if __LIBRETRO__
 			unsigned short* draw = &drawBuffer[(*scanlineY)*(screen->w)];
-#else
-			unsigned short* draw = &drawBuffer[(*scanlineY)*(screen->w+PSP_FUDGE)];/* extra fudge factor for PSP??? */
-#endif
 			unsigned short bgcol;
             unsigned int bw = (m_emuInfo.machine == NGP);
             unsigned short OOWCol = NGPC_TO_RGB565(oowTable[*oowSelect & 0x07]);
@@ -1207,33 +1194,9 @@ void myGraphicsBlitLine(unsigned char render)  /* NOTA */
 
 BOOL graphics_init(void)
 {
-#ifdef __LIBRETRO__
     palette_init = palette_init16;
     palette_init(RMASK, GMASK, BMASK);
     drawBuffer = (unsigned short*)screen->pixels;
-#else
-    dbg_print("in graphics_init\n");
-
-    switch (screen->format->BitsPerPixel)
-    {
-        case 8:
-        palette_init = palette_init8;
-        break;
-        case 16:
-        palette_init = palette_init16;
-        break;
-        case 32:
-        palette_init = palette_init32;
-        break;
-    }
-
-    drawBuffer = ((unsigned short*) screen->pixels) + SCREEN_OFFET;
-
-    palette_init(screen->format->Rmask,
-                 screen->format->Gmask, screen->format->Bmask);
-
-    pngpalette_init();
-#endif
 
     switch(m_emuInfo.machine)
     {

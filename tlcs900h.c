@@ -5715,7 +5715,6 @@ static INLINE unsigned char makeBCD(int i)
 
 void initTimezone(void)
 {
-#ifdef __LIBRETRO__
 /*#define PSP_SYSTEMPARAM_ID_INT_TIMEZONE         6
 	static int tzInit=0;
 
@@ -5734,7 +5733,6 @@ void initTimezone(void)
 	}
 #else
 	tzset();//prob need more than just this*/
-#endif
 }
 
 
