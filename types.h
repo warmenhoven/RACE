@@ -12,10 +12,6 @@
 
 #include <stdint.h>
 
-#define BOOL  int
-#define FALSE 0
-#define TRUE  (!0)
-
 #ifdef _WIN32
 #define path_default_slash() "\\"
 #define path_default_slash_c() '\\'

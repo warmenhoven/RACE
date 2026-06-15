@@ -521,8 +521,6 @@ static INLINE void skipJumpWord(void)
     my_pc+=2;
 }
 
-
-#define cond0() (FALSE)
 #define cond1() (((gen_regsSR & (SF|VF)) == SF) || ((gen_regsSR & (SF|VF)) == VF))
 #define cond2() ((gen_regsSR & ZF) || (((gen_regsSR & (SF|VF)) == SF) || ((gen_regsSR & (SF|VF)) == VF)))
 #define cond3() (gen_regsSR & (ZF|CF))
@@ -530,7 +528,6 @@ static INLINE void skipJumpWord(void)
 #define cond5() (gen_regsSR & SF)
 #define cond6() (gen_regsSR & ZF)
 #define cond7() (gen_regsSR & CF)
-#define cond8() (TRUE)
 #define cond9() (!(((gen_regsSR & (SF|VF)) == SF) || ((gen_regsSR & (SF|VF)) == VF)))
 #define notCond9() (((gen_regsSR & (SF|VF)) == SF) || ((gen_regsSR & (SF|VF)) == VF))
 #define condA() (!((gen_regsSR & ZF) || (((gen_regsSR & (SF|VF)) == SF) || ((gen_regsSR & (SF|VF)) == VF))))
@@ -547,10 +544,7 @@ static INLINE void skipJumpWord(void)
 #define notCondF() (gen_regsSR & CF)
 
 // status register check functions
-static INLINE unsigned char srF(void)
-{
-    return 0;
-}
+static INLINE unsigned char srF(void) { return 0; }
 static INLINE unsigned char srLT(void)
 {
     return ((((gen_regsSR & (SF|VF)) == SF)
@@ -582,10 +576,7 @@ static INLINE unsigned char srC(void)
 {
     return ((gen_regsSR & CF) ? 1 : 0);
 }
-static INLINE unsigned char srT(void)
-{
-    return 1;
-}
+static INLINE unsigned char srT(void) { return 1; }
 static INLINE unsigned char srGE(void)
 {
     return ((((gen_regsSR & (SF|VF)) == SF)
@@ -639,10 +630,8 @@ static INLINE unsigned char srNC(void)
 
 static INLINE void set_cregs(void)  //optimized by Thor
 {
-    int i;
     static int lastbank = -1;
-
-    i = (gen_regsSR & 0x0700)>>4;
+    int i = (gen_regsSR & 0x0700)>>4;
 
     if (i==lastbank)
         return;
@@ -4595,14 +4584,6 @@ int jp24(void)  // JP #24    00011011 xxxxxxxx xxxxxxxx xxxxxxxx
 
 int jrcc0(void)  // JR cc,$+2+d8   0110cccc xxxxxxxx
 {
-    /*
-    //cond0 always false
-    if (cond0())
-    {
-        doJumpByte();
-        return 8;
-    }
-*/
     skipJumpByte();
     return 4;
 }
@@ -4783,14 +4764,6 @@ int jrccF(void)  // JR cc,$+2+d8   0110cccc xxxxxxxx
 
 int jrlcc0(void)  // JR cc,$+2+d16   0110cccc xxxxxxxx
 {
-    /*
-    //cond0 always false
-    if (cond0())
-    {
-        doJumpWord();
-        return 8;
-    }
-*/
     skipJumpWord();
     return 4;
 }
@@ -4970,20 +4943,8 @@ int jrlccF(void)  // JR cc,$+2+d16   0110cccc xxxxxxxx
     return 8;
 }
 
-int jpccM300(void) // JP cc,mem
-{
-    /*
-    //cond0 always false
-    if (cond0())
-    {
-        gen_regsPC = mem;
-        my_pc = get_address(gen_regsPC);
-        return 8;
-    }
-    else
-*/
-        return 4;
-}
+/* JP cc,mem */
+int jpccM300(void) { return 4; }
 
 int jpccM301(void) // JP cc,mem
 {
@@ -5195,20 +5156,8 @@ int calr(void)  // CALR $+3+d16   00011110 xxxxxxxx xxxxxxxx
     return 12;
 }
 
-int callccM300(void) // CALL cc,mem  10110mmm 1110cccc
-{
-    /*
-    //cond0 always false
-    if (cond0())
-    {
-	    tlcsFastMemWriteL(gen_regsXSP-=4,gen_regsPC);
-        my_pc = get_address(gen_regsPC = mem);
-        return 12;
-    }
-    else
-*/
-        return 6;
-}
+/* CALL cc,mem  10110mmm 1110cccc */
+int callccM300(void) { return 6; }
 
 int callccM301(void) // CALL cc,mem  10110mmm 1110cccc
 {
@@ -5422,21 +5371,8 @@ int ret(void)  // RET     00001110
     return 9;
 }
 
-int retcc0(void) // RET cc    10110000 1111cccc
-{
-    /*
-    //cond0 always false
-    if (cond0())
-    {
-        gen_regsPC = mem_readL(gen_regsXSP);
-        gen_regsXSP+= 4;
-        my_pc = get_address(gen_regsPC);
-        return 12;
-    }
-    else
-*/
-        return 6;
-}
+/* RET cc    10110000 1111cccc */
+int retcc0(void) { return 6; }
 
 int retcc1(void) // RET cc    10110000 1111cccc
 {
@@ -5650,7 +5586,7 @@ int reti(void)  // RETI     00000111
 
 int udef(void)
 {
-    m_bIsActive = FALSE;
+    m_bIsActive = 0;
     return 1;
 }
 
@@ -7733,7 +7669,7 @@ void tlcs_execute(int cycles, int skipRender)
 
         if (hCounter < 0)
         {
-            // time equivalent to 1 horizontal line has passed
+            /* time equivalent to 1 horizontal line has passed */
             myGraphicsBlitLine(!skipRender);
 
             //NOTA     
@@ -7751,7 +7687,7 @@ void tlcs_execute(int cycles, int skipRender)
             }
             else if (*scanlineY == 152)
             {
-                // VBlank
+                /* VBlank */
                 if (tlcsMemReadB(0x8000)&0x80)
                     tlcs_interrupt(2);
             }
@@ -7761,5 +7697,5 @@ void tlcs_execute(int cycles, int skipRender)
     }
     ngOverflow = hCounter + cycles;
 
-    //MHE used to sound update here!?!?
+    /* MHE used to sound update here!?!? */
 }

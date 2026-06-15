@@ -166,21 +166,11 @@ void mainemuinit(void)
    ngpSoundOff();
 }
 
-static void	SetActive(BOOL bActive)
-{
-	m_bIsActive = bActive;
-}
-
-static void	SetEmu(int machine)
-{
-	m_emuInfo.machine = machine;
-}
-
 static int initRom(void)
 {
-   int		i, m;
-   char	*licenseInfo   = " BY SNK CORPORATION";
-   BOOL	romFound       = TRUE;
+   int i, m;
+   char	*license_info = " BY SNK CORPORATION";
+   int rom_found = 1;
 
    finscan=198;
 
@@ -188,17 +178,18 @@ static int initRom(void)
       finscan=199;
 
    /* first stop the current emulation */
-   SetEmu(NGPC);
-   SetActive(FALSE);
+   m_emuInfo.machine = NGPC;
+   m_bIsActive = 0;
 
    /* check NEOGEO POCKET
     * check license info */
    for (i=0;i<19;i++)
    {
-      if (mainrom[0x000009 + i] != licenseInfo[i])
-         romFound = FALSE;
+      if (mainrom[0x000009 + i] != license_info[i])
+         rom_found = 0;
    }
-   if (romFound)
+
+   if (rom_found)
    {
       i = mainrom[0x000023];
       if (i == 0x10 || i == 0x00)
@@ -208,7 +199,7 @@ static int initRom(void)
             m = NGPC;
          else
          {
-            // fix for missing Mono/Color setting in Cool Coom Jam SAMPLE rom
+            /* fix for missing Mono/Color setting in Cool Coom Jam SAMPLE ROM */
             if (mainrom[0x000020] == 0x34 && mainrom[0x000021] == 0x12)
                m = NGPC;
             else
@@ -217,28 +208,29 @@ static int initRom(void)
          if (tipo_consola==1)
             m = NGP;
 
-         SetEmu(m);
+	 m_emuInfo.machine = m;
 
          mainemuinit();
-         // start running the emulation loop
-         SetActive(TRUE);
-
-         return TRUE;
+         /* start running the emulation loop */
+	 m_bIsActive = 1;
+         return 1;
       }
 
       if (log_cb)
-         log_cb(RETRO_LOG_ERROR, "Not a valid or unsupported rom file.\n");
-      return FALSE;
+         log_cb(RETRO_LOG_ERROR, "Not a valid or unsupported ROM file.\n");
+   }
+   else
+   {
+	   if (log_cb)
+		   log_cb(RETRO_LOG_ERROR, "Not a valid or unsupported ROM file. rom_found == 0\n");
    }
 
-   if (log_cb)
-      log_cb(RETRO_LOG_ERROR, "Not a valid or unsupported rom file. romFound==FALSE\n");
-   return FALSE;
+   return 0;
 }
 
 static void initSysInfo(void)
 {
-	m_bIsActive       = FALSE;
+	m_bIsActive       = 0;
 
 	m_emuInfo.machine = NGPC;
 	m_emuInfo.romSize = 0;

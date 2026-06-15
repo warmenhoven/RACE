@@ -744,7 +744,7 @@ void myGraphicsBlitLine(unsigned char render)  /* NOTA */
  *
  */
 
-BOOL graphics_init(void)
+void graphics_init(void)
 {
     palette_init = palette_init16;
     palette_init(RMASK, GMASK, BMASK);
@@ -752,16 +752,15 @@ BOOL graphics_init(void)
 
     switch(m_emuInfo.machine)
     {
-        case NGP:
-            bgTable  = (unsigned short *)bwTable;
-            oowTable = (unsigned short *)bwTable;
-            *scanlineY = 0;
-            break;
-        case NGPC:
-			bgTable  = (unsigned short *)get_address(0x000083E0);
-			oowTable  = (unsigned short *)get_address(0x000083F0);
-         *scanlineY = 0;
-         break;
+	    case NGP:
+		    bgTable  = (unsigned short *)bwTable;
+		    oowTable = (unsigned short *)bwTable;
+		    *scanlineY = 0;
+		    break;
+	    case NGPC:
+		    bgTable  = (unsigned short *)get_address(0x000083E0);
+		    oowTable  = (unsigned short *)get_address(0x000083F0);
+		    *scanlineY = 0;
+		    break;
     }
-    return TRUE;
 }
