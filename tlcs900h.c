@@ -7779,5 +7779,3 @@ void tlcs_execute(int cycles, int skipRender)
 
     //MHE used to sound update here!?!?
 }
-
-
