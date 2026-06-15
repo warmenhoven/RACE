@@ -432,6 +432,20 @@ void retro_run(void)
          frameskip_counter++;
    }
 
+   /* If the frontend has disabled video (e.g. run-ahead or fast-forward frames
+    * whose output it will discard), skip rendering this frame. The NGPC
+    * renderer is a pure function of emulation state - it reads VRAM and writes
+    * pixels without feeding anything back - so skipping it leaves the next
+    * frame's output and savestates unchanged, as the environment call requires. */
+   {
+      int av_enable = 0x7; /* default: video+audio enabled if unsupported */
+      if (environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &av_enable))
+      {
+         if (!(av_enable & 0x1)) /* bit 0 clear: video disabled */
+            skipFrame = 1;
+      }
+   }
+
    /* If frameskip settings have changed, update
     * frontend audio latency */
    if (update_audio_latency)

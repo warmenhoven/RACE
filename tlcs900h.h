@@ -19,7 +19,6 @@
 extern "C" {
 #endif
 
-#define FRAMESKIP //undef this to do no FRAME skipping
 
 extern unsigned char *rasterY;
 extern unsigned int gen_regsPC, gen_regsSR;
@@ -64,11 +63,7 @@ void tlcs_init(void);
 void tlcs_reinit(void);
 /* execute interrupt */
 void tlcs_interrupt_wrapper(int irq);
-#ifdef FRAMESKIP
-void tlcs_execute(int cycles, int skipFrames); /* skipFrames=how many frames to skip for each frame rendered */
-#else
-void tlcs_execute(int cycles);
-#endif
+void tlcs_execute(int cycles, int skipRender); /* skipRender != 0: run the frame but render no video */
 
 /* Real-time clock determinism (see tlcs900h.c). rtc_reset captures the base
  * time; rtc_tick_frame advances the emulated clock once per frame. */

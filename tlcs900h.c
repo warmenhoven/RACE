@@ -7718,18 +7718,14 @@ static int tlcs_step(void)
 extern unsigned char *ngpScY;
 int ngOverflow = 0;
 
-#ifdef FRAMESKIP
-void tlcs_execute(int cycles, int skipFrames)// skipFrames=how many frames to skip for each frame rendered
-#else
-void tlcs_execute(int cycles)
-#endif
+/* skipRender != 0 means: run the emulation for this frame but do not render
+ * any video (used for libretro frameskip and for run-ahead / fast-forward
+ * frames whose output the frontend discards). The renderer is a pure function
+ * of emulation state, so skipping it does not affect the next frame. */
+void tlcs_execute(int cycles, int skipRender)
 {
     int elapsed;
     int hCounter = ngOverflow;
-
-#ifdef FRAMESKIP
-    int frame = skipFrames;
-#endif
 
     while(cycles > 0)
     {
@@ -7754,11 +7750,7 @@ void tlcs_execute(int cycles)
         if (hCounter < 0)
         {
             // time equivalent to 1 horizontal line has passed
-#ifdef FRAMESKIP
-            myGraphicsBlitLine(frame==0);
-#else
-            myGraphicsBlitLine(true);
-#endif
+            myGraphicsBlitLine(!skipRender);
 
             //NOTA     
             
@@ -7778,12 +7770,6 @@ void tlcs_execute(int cycles)
                 // VBlank
                 if (tlcsMemReadB(0x8000)&0x80)
                     tlcs_interrupt(2);
-#ifdef FRAMESKIP
-                if(frame == 0)
-                    frame = skipFrames;
-                else
-                    frame--;
-#endif
             }
 
         }
@@ -7795,4 +7781,3 @@ void tlcs_execute(int cycles)
 }
 
 
-//Flavor, this auto-frameskip code is messed up
