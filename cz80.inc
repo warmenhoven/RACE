@@ -117,14 +117,14 @@ void cpu_writeport(int Port,int Value);
     (*zPC++)
 
 #define REAL_FETCH_BYTE_S            \
-    ((s8)(*zPC++))
+    ((int8_t)(*zPC++))
 
 #define FETCH_BYTE(A)		\
    A = (mame4all_cz80_ram[((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)]); \
    zPC++
 
 #define FETCH_BYTE_S(A)		\
-   A = ((s8)(mame4all_cz80_ram[((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])); \
+   A = ((int8_t)(mame4all_cz80_ram[((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])); \
    zPC++
 
 #if CZ80_LITTLE_ENDIAN
@@ -150,9 +150,9 @@ void cpu_writeport(int Port,int Value);
 #ifdef CZ80_USE_MAME_CHANGE_PC
 #define SET_PC(A) \
  change_pc16(A) \
- zPC = (u8*)&mame4all_cz80_rom[A]
+ zPC = (uint8_t*)&mame4all_cz80_rom[A]
 #else
-#define SET_PC(A) zPC = (u8*)&mame4all_cz80_rom[A]
+#define SET_PC(A) zPC = (uint8_t*)&mame4all_cz80_rom[A]
 #endif
 
 #define PRE_IO                  \
@@ -176,7 +176,7 @@ void cpu_writeport(int Port,int Value);
 #endif
 
 #define READSX_BYTE(A, D)               \
-    D = (s8)cpu_readmem16(A);
+    D = (int8_t)cpu_readmem16(A);
 
 #define WRITE_BYTE(A, D)                \
     cpu_writemem16(A, D);
@@ -196,7 +196,7 @@ void cpu_writeport(int Port,int Value);
 
 #define PUSH_16(A)          \
     {                       \
-        u32 sp;             \
+        uint32_t sp;             \
                             \
         zSP -= 2;           \
         sp = zSP;           \
@@ -205,7 +205,7 @@ void cpu_writeport(int Port,int Value);
 
 #define POP_16(A)           \
     {                       \
-        u32 sp;             \
+        uint32_t sp;             \
                             \
         sp = zSP;           \
         READ_WORD(sp, A)    \

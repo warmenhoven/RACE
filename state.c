@@ -33,26 +33,26 @@
 
 struct race_state_header
 {
-  u8 state_version;       /* State version */
-  u8 rom_signature[0x40]; /* Rom signature, for verification */
+  uint8_t state_version;       /* State version */
+  uint8_t rom_signature[0x40]; /* Rom signature, for verification */
 };
 
 struct race_state_0x11
 {
 	/* Memory */
-	u8 ram[0xc000];
-  u8 cpuram[0x08a0];
+	uint8_t ram[0xc000];
+  uint8_t cpuram[0x08a0];
 
 	/* TLCS-900h Registers */
-	u32 pc, sr;
-	u8 f_dash;
-	u32 gpr[23];
+	uint32_t pc, sr;
+	uint8_t f_dash;
+	uint32_t gpr[23];
 
   /* Z80 Registers */
 #ifdef CZ80
   cz80_struc RACE_cz80_struc;
-  u32 PC_offset;
-  s32 Z80_ICount;
+  uint32_t PC_offset;
+  int32_t Z80_ICount;
 #elif DRZ80
   struct Z80_Regs Z80;
 #endif
@@ -65,37 +65,37 @@ struct race_state_0x11
   int timer0, timer1, timer2, timer3;
 
 	/* DMA */
-  u8 ldcRegs[64];
+  uint8_t ldcRegs[64];
 
   /* Real-time clock (appended): persisting these makes a loaded state
    * reproduce the same emulated clock on every instance, so RTC reads stay
    * deterministic across netplay peers and rewind/runahead. */
   int64_t rtc_base_time;
-  u32     rtc_frame_counter;
+  uint32_t     rtc_frame_counter;
 };
 
 struct race_state_0x10 /* Older state format */
 {
    /* Save state version */
-   u8 state_version; /* = 0x10 */
+   uint8_t state_version; /* = 0x10 */
 
    /* Rom signature */
-   u8 rom_signature[0x40];
+   uint8_t rom_signature[0x40];
 
    /* Memory */
-   u8 ram[0xc000];
-   u8 cpuram[0x08a0]; /* 0xC000]; 0x38000  */
+   uint8_t ram[0xc000];
+   uint8_t cpuram[0x08a0]; /* 0xC000]; 0x38000  */
 
    /* TLCS-900h Registers */
-   u32 pc, sr;
-   u8 f_dash;
-   u32 gpr[23];
+   uint32_t pc, sr;
+   uint8_t f_dash;
+   uint32_t gpr[23];
 
    /* Z80 Registers */
 #ifdef CZ80
    cz80_struc RACE_cz80_struc;
-   u32 PC_offset;
-   s32 Z80_ICount;
+   uint32_t PC_offset;
+   int32_t Z80_ICount;
 #elif DRZ80
    struct Z80_Regs Z80;
 #endif
@@ -109,7 +109,7 @@ struct race_state_0x10 /* Older state format */
    int timer0, timer1, timer2, timer3;
 
    /* DMA */
-   u8 ldcRegs[64];
+   uint8_t ldcRegs[64];
 };
 
 typedef struct race_state_0x11 race_state_t;
@@ -119,7 +119,7 @@ static int state_store(race_state_t *rs)
   int i = 0;
 #ifdef CZ80
   extern cz80_struc *RACE_cz80_struc;
-  extern s32 Z80_ICount;
+  extern int32_t Z80_ICount;
   int size_of_z80;
 #elif DRZ80
   extern struct Z80_Regs Z80;
@@ -224,7 +224,7 @@ static int state_restore(race_state_t *rs)
   int i = 0;
 #ifdef CZ80
   extern cz80_struc *RACE_cz80_struc;
-  extern s32 Z80_ICount;
+  extern int32_t Z80_ICount;
   int size_of_z80;
 #elif DRZ80
   extern struct Z80_Regs Z80;

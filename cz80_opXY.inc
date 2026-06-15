@@ -126,7 +126,7 @@ switch (Opcode)
         goto OP_LOAD_mNN_A;
 
     {
-        u32 adr;
+        uint32_t adr;
 
     OPXY(0x46): // LD   B,(IX+o)
     OPXY(0x56): // LD   D,(IX+o)
@@ -136,7 +136,7 @@ switch (Opcode)
     OPXY(0x4e): // LD   C,(IX+o)
     OPXY(0x7e): // LD   A,(IX+o)
         PRE_IO
-	{ s8 t; FETCH_BYTE_S(t); adr = data->W + t; }
+	{ int8_t t; FETCH_BYTE_S(t); adr = data->W + t; }
         READ_BYTE(adr, zR8((Opcode >> 3) & 7))
         POST_IO
         RET(15)
@@ -149,15 +149,15 @@ switch (Opcode)
     OPXY(0x75): // LD   (IX+o),L
     OPXY(0x77): // LD   (IX+o),A
         PRE_IO
-	{ s8 t; FETCH_BYTE_S(t); adr = data->W + t; }
+	{ int8_t t; FETCH_BYTE_S(t); adr = data->W + t; }
         WRITE_BYTE(adr, zR8(Opcode & 7))
         POST_IO
         RET(15)
 
     OPXY(0x36): // LD   (IX+o),#imm
         PRE_IO
-	{ s8 t; FETCH_BYTE_S(t); adr = data->W + t; }
-	{ u8 t; FETCH_BYTE(t); WRITE_BYTE(adr, t); }
+	{ int8_t t; FETCH_BYTE_S(t); adr = data->W + t; }
+	{ uint8_t t; FETCH_BYTE(t); WRITE_BYTE(adr, t); }
         POST_IO
         RET(15)
     }
@@ -396,10 +396,10 @@ switch (Opcode)
 
     OPXY(0xa6): // AND  (IX+o)
     {
-        u32 val;
+        uint32_t val;
 
         PRE_IO
-	{ s8 t; FETCH_BYTE_S(t); READ_BYTE(data->W + t, val); }
+	{ int8_t t; FETCH_BYTE_S(t); READ_BYTE(data->W + t, val); }
         POST_IO
         zA = zA & val;
         zF = SZXYP[zA] | CZ80_HF;
@@ -428,10 +428,10 @@ switch (Opcode)
 
     OPXY(0xae): // XOR  (IX+o)
     {
-        u32 val;
+        uint32_t val;
 
         PRE_IO
-	{ s8 t; FETCH_BYTE_S(t); READ_BYTE(data->W + t, val); }
+	{ int8_t t; FETCH_BYTE_S(t); READ_BYTE(data->W + t, val); }
         POST_IO
         zA = zA ^ val;
         zF = SZXYP[zA];
@@ -460,10 +460,10 @@ switch (Opcode)
 
     OPXY(0xb6): // OR   (IX+o)
     {
-        u32 val;
+        uint32_t val;
 
         PRE_IO
-	{ s8 t; FETCH_BYTE_S(t); READ_BYTE(data->W + t, val); }
+	{ int8_t t; FETCH_BYTE_S(t); READ_BYTE(data->W + t, val); }
         POST_IO
         zA = zA | val;
         zF = SZXYP[zA];
@@ -690,11 +690,11 @@ switch (Opcode)
 
     OPXY(0xcb): // XYCB PREFIXE
     {
-        u32 adr;
-        u32 src;
-        u32 res;
+        uint32_t adr;
+        uint32_t src;
+        uint32_t res;
 
-	{ s8 t; FETCH_BYTE_S(t); adr = data->W + t; }
+	{ int8_t t; FETCH_BYTE_S(t); adr = data->W + t; }
         FETCH_BYTE(Opcode);
         #include "cz80_opXYCB.inc"
     }

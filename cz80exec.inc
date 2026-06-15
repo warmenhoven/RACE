@@ -6,9 +6,9 @@
 /*                                                                              */
 /********************************************************************************/
 
-s32 Z80_ICount;
+int32_t Z80_ICount;
 
-s32 CZ80_FASTCALL Cz80_Exec(cz80_struc *cpu, s32 cycles)
+int32_t CZ80_FASTCALL Cz80_Exec(cz80_struc *cpu, int32_t cycles)
 {
 #if CZ80_USE_JUMPTABLE
     #include "cz80jmp.inc"
@@ -16,12 +16,12 @@ s32 CZ80_FASTCALL Cz80_Exec(cz80_struc *cpu, s32 cycles)
 
 #if __x86__
     register cz80_struc *CPU asm ("ebx");
-    register u8 *PC asm ("esi");
-    register u32 Opcode asm ("edx");
+    register uint8_t *PC asm ("esi");
+    register uint32_t Opcode asm ("edx");
 #else
     cz80_struc *CPU;
-    u8 *PC;
-    u32 Opcode;
+    uint8_t *PC;
+    uint32_t Opcode;
 #endif
 
     CPU = cpu;
@@ -40,7 +40,7 @@ Cz80_Check_Int:
     // check for interrupt
     if (CPU->Status & (zIFF1 | CZ80_HAS_NMI))
     {
-        u32 newPC;
+        uint32_t newPC;
 
         if (CPU->Status & CZ80_HAS_NMI)
         {
@@ -59,7 +59,7 @@ Cz80_Check_Int:
             if (zIM == 1) newPC = 0x38;
             else
             {
-                u32 adr;
+                uint32_t adr;
 
                 Opcode = CPU->IntVect & 0xFF;
                 // IM = 0
@@ -76,7 +76,7 @@ Cz80_Check_Int:
 
         // set new PC
         {
-            u32 src = zRealPC;
+            uint32_t src = zRealPC;
 
             PUSH_16(src)
             SET_PC(newPC);
