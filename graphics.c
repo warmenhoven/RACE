@@ -879,25 +879,43 @@ void drawScrollPlane(unsigned short* draw,
 		if (pattern)
 		{
 			pal = &myPalettes[scrpal + (bw ? (tile&0x2000 ? 4 : 0) : ((tile>>7)&0x3c))];
-			if (tile&0x8000)
+			/* Plot a full 8-pixel tile row by expanding each byte of the
+			 * pattern through the mypatterns LUT (byte -> 4 pixel indices)
+			 * and writing the 8 pixels straight out, skipping transparent
+			 * (index 0) pixels. This avoids the data-dependent shift loop and
+			 * is bit-identical to it (verified for all pattern values). */
 			{
-                for (j=i;pattern;++j)
-                {
-                    pix = pattern & 0x3;
-                    if (pix)
-                        draw[j] = pal[pix];
-                    pattern>>=2;
-                }
-			}
-			else
-			{
-                for (j=i+7;pattern;--j)
-                {
-                    pix = pattern & 0x3;
-                    if (pix)
-                        draw[j] = pal[pix];
-                    pattern>>=2;
-                }
+				unsigned short* gb = &draw[i];
+				const unsigned char* p2;
+				unsigned char lo = pattern & 0xff;
+				unsigned char hi = (pattern >> 8) & 0xff;
+				if (tile&0x8000)
+				{
+					/* horizontal flip: reverse pixel order */
+					p2 = &mypatterns[lo<<2];
+					if (p2[3]) gb[0] = pal[p2[3]];
+					if (p2[2]) gb[1] = pal[p2[2]];
+					if (p2[1]) gb[2] = pal[p2[1]];
+					if (p2[0]) gb[3] = pal[p2[0]];
+					p2 = &mypatterns[hi<<2];
+					if (p2[3]) gb[4] = pal[p2[3]];
+					if (p2[2]) gb[5] = pal[p2[2]];
+					if (p2[1]) gb[6] = pal[p2[1]];
+					if (p2[0]) gb[7] = pal[p2[0]];
+				}
+				else
+				{
+					p2 = &mypatterns[hi<<2];
+					if (p2[0]) gb[0] = pal[p2[0]];
+					if (p2[1]) gb[1] = pal[p2[1]];
+					if (p2[2]) gb[2] = pal[p2[2]];
+					if (p2[3]) gb[3] = pal[p2[3]];
+					p2 = &mypatterns[lo<<2];
+					if (p2[0]) gb[4] = pal[p2[0]];
+					if (p2[1]) gb[5] = pal[p2[1]];
+					if (p2[2]) gb[6] = pal[p2[2]];
+					if (p2[3]) gb[7] = pal[p2[3]];
+				}
 			}
 		}
 		dx+=8;
