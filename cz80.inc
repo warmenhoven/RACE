@@ -127,13 +127,13 @@ void cpu_writeport(int Port,int Value);
    A = ((int8_t)(mame4all_cz80_ram[((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])); \
    zPC++
 
-#if CZ80_LITTLE_ENDIAN
+#ifdef MSB_FIRST
 #define FETCH_WORD(A) \
-    A= ((unsigned short)(mame4all_cz80_ram[((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])) | (((unsigned short)(mame4all_cz80_ram[1+((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])) << 8); 	\
+    A= ((unsigned short)(mame4all_cz80_ram[1+((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])) | (((unsigned short)(mame4all_cz80_ram[((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])) << 8); 	\
     zPC += 2
 #else
 #define FETCH_WORD(A) \
-    A= ((unsigned short)(mame4all_cz80_ram[1+((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])) | (((unsigned short)(mame4all_cz80_ram[((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])) << 8); 	\
+    A= ((unsigned short)(mame4all_cz80_ram[((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])) | (((unsigned short)(mame4all_cz80_ram[1+((uintptr_t)zPC)-((uintptr_t)mame4all_cz80_rom)])) << 8); 	\
     zPC += 2
 #endif
 
@@ -167,12 +167,12 @@ void cpu_writeport(int Port,int Value);
 #if CZ80_USE_WORD_HANDLER
 #define READ_WORD(A, D)                 \
     D = CPU->Read_Word(A);
-#elif CZ80_LITTLE_ENDIAN
-#define READ_WORD(A, D)                 \
-    D = cpu_readmem16(A) | (cpu_readmem16((A) + 1) << 8);
-#else
+#elif defined(MSB_FIRST)
 #define READ_WORD(A, D)                 \
     D = (cpu_readmem16(A) << 8) | cpu_readmem16((A) + 1);
+#else
+#define READ_WORD(A, D)                 \
+    D = cpu_readmem16(A) | (cpu_readmem16((A) + 1) << 8);
 #endif
 
 #define READSX_BYTE(A, D)               \
@@ -184,7 +184,7 @@ void cpu_writeport(int Port,int Value);
 #if CZ80_USE_WORD_HANDLER
 #define WRITE_WORD(A, D)                \
     cpu_writemem16(A, D);
-#elif CZ80_LITTLE_ENDIAN
+#elif defined(MSB_FIRST)
 #define WRITE_WORD(A, D)                \
     cpu_writemem16(A, D);              \
     cpu_writemem16((A) + 1, (D) >> 8);
