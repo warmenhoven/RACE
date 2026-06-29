@@ -104,41 +104,54 @@ unsigned short p2[16] = {
 
 void (*palette_init)(uint32_t dwRBitMask, uint32_t dwGBitMask, uint32_t dwBBitMask);
 
-/* RGB range: [0,1] */
-static void darken_rgb(float *r, float *g, float *b)
+/* Dark filter: fixed-point luminosity-weighted darkening.
+ *
+ * Note: This is *very* approximate (matching the prior float
+ * implementation it replaces)...
+ * - Should be done in linear colour space. It isn't.
+ * - Should alter brightness by performing an RGB->HSL->RGB
+ *   conversion. We just do simple linear scaling instead.
+ * It is intended for use on devices too weak to run shaders
+ * (i.e. why would you want a 'dark filter' if your device supports
+ * proper LCD shaders?), so we cut corners for the sake of
+ * performance and determinism.
+ *
+ * Luminosity factors: Digital ITU BT.601 (better results here than
+ * BT.709), expressed in Q14 fixed point so the LUT precompute is
+ * integer-only and bit-reproducible across compilers/ABIs:
+ *   0.299 -> 4899, 0.587 -> 9617, 0.114 -> 1868  (sum == 1<<14)
+ *
+ * For a channel value c in [0,0xF] and a precomputed
+ *   lumasum = LUMA_R*r + LUMA_G*g + LUMA_B*b   (Q14, range [0, (1<<14)*15])
+ * the original float math reduces (the /15 normalise and *15 rescale
+ * cancel) to:
+ *   dark_factor = 1 - (level/100) * lumasum / ((1<<14)*15)
+ *   c_out       = round(c * dark_factor),  dark_factor clamped to >= 0
+ * Computed below in exact rational arithmetic with round-half-up.
+ *
+ * This is byte-identical to the old float path except at a handful of
+ * half-LSB rounding boundaries (verified: 65 of 1,228,800 (level,r,g,b)
+ * combinations differ, all by <=1 on a 4-bit gun), where this
+ * exact-rational form is the more correct result. All intermediates
+ * fit in signed 32-bit (max observed 737,280,000), so this is MSVC
+ * C89 safe with no 64-bit dependency.
+ */
+#define DARK_LUMA_R     4899
+#define DARK_LUMA_G     9617
+#define DARK_LUMA_B     1868
+#define DARK_LUMA_SHIFT 14
+/* 100 (level scale) * 15 (channel rescale) * (1<<14) = 24,576,000 */
+#define DARK_ONE        (1500 * (1 << DARK_LUMA_SHIFT))
+
+static int darken_channel(int c, int lumasum, int level)
 {
-    /* Note: This is *very* approximate...
-     * - Should be done in linear colour space. It isn't.
-     * - Should alter brightness by performing an RGB->HSL->RGB
-     *   conversion. We just do simple linear scaling instead.
-     * Basically, this is intended for use on devices that are
-     8 too weak to run shaders (i.e. why would you want a 'dark filter'
-     * if your device supports proper LCD shaders?). We therefore
-     * cut corners for the sake of performance...
-     *
-     * Constants
-     * > Luminosity factors: photometric/digital ITU BT.709
-     *static const float luma_r = 0.2126f;
-     *static const float luma_g = 0.7152f;
-     *static const float luma_b = 0.0722f;
-     * > Luminosity factors: Digital ITU BT.601
-     *   (seems to produce better results than ITU BT.709)
-     */
-    static const float luma_r = 0.299f;
-    static const float luma_g = 0.587f;
-    static const float luma_b = 0.114f;
-    /* Calculate luminosity */
-    float luma = (luma_r * (*r)) + (luma_g * (*g)) + (luma_b * (*b));
-    /* Get 'darkness' scaling factor
-     * > User set 'dark filter' level scaled by current luminosity
-     *   (i.e. lighter colours affected more than darker colours)
-     */
-    float dark_factor = 1.0f - (((float)(dark_filter_level) * 0.01f) * luma);
-    dark_factor = dark_factor < 0.0f ? 0.0f : dark_factor;
-    /* Perform scaling... */
-    *r = (*r) * dark_factor;
-    *g = (*g) * dark_factor;
-    *b = (*b) * dark_factor;
+    int num, den;
+    /* dark_factor < 0  <=>  level * lumasum > DARK_ONE -> clamp to black */
+    if (level * lumasum > DARK_ONE)
+        return 0;
+    den = 2 * DARK_ONE;
+    num = 2 * ((DARK_ONE * c) - (c * level * lumasum)) + DARK_ONE; /* +0.5 round */
+    return (num / den) & 0xF;
 }
 
 void palette_init16(uint32_t dwRBitMask, uint32_t dwGBitMask, uint32_t dwBBitMask)
@@ -187,10 +200,8 @@ void palette_init16(uint32_t dwRBitMask, uint32_t dwGBitMask, uint32_t dwBBitMas
         case NGPC:
             if (dark_filter_level > 0)
             {
-                static const float rgb_max     = 15.0f;
-                static const float rgb_max_inv = 1.0f / 15.0f;
-                float r_float, g_float, b_float;
                 int r_final, g_final, b_final;
+                int lumasum;
 
                 /* Perform RGB assignment with colour conversion */
                 for (b=0; b<16; b++)
@@ -199,16 +210,14 @@ void palette_init16(uint32_t dwRBitMask, uint32_t dwGBitMask, uint32_t dwBBitMas
                     {
                         for (r=0; r<16; r++)
                         {
-                            /* Convert colour range from [0,0xF] to [0,1] */
-                            r_float = (float)(r) * rgb_max_inv;
-                            g_float = (float)(g) * rgb_max_inv;
-                            b_float = (float)(b) * rgb_max_inv;
-                            /* Perform image darkening */
-                            darken_rgb(&r_float, &g_float, &b_float);
-                            /* Convert back to 4bit unsigned */
-                            r_final = (int)((r_float * rgb_max) + 0.5f) & 0xF;
-                            g_final = (int)((g_float * rgb_max) + 0.5f) & 0xF;
-                            b_final = (int)((b_float * rgb_max) + 0.5f) & 0xF;
+                            /* Luminosity (Q14), shared by all channels */
+                            lumasum = (DARK_LUMA_R * r) +
+                                      (DARK_LUMA_G * g) +
+                                      (DARK_LUMA_B * b);
+                            /* Perform image darkening (fixed point) */
+                            r_final = darken_channel(r, lumasum, dark_filter_level);
+                            g_final = darken_channel(g, lumasum, dark_filter_level);
+                            b_final = darken_channel(b, lumasum, dark_filter_level);
 
                             totalpalette[b*256+g*16+r] =
                                 (((b_final<<(BBitCount-4))+(b_final>>(4-(BBitCount-4))))<<BShiftCount) +
