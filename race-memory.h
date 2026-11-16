@@ -42,6 +42,24 @@ extern unsigned char mainram[];			/* All RAM areas */
 extern unsigned char mainrom[];			/* ROM image area */
 extern unsigned char cpurom[];			/* Bios ROM image area */
 
+/* ROM_INDEX(i): i, hidden from the optimizer.
+ *
+ * The cartridge and BIOS windows are reached as mainrom[addr - 0x200000],
+ * mainrom[addr - 0x600000] and cpurom[addr - 0xff0000]. GCC reassociates
+ * these into (mainrom - 0x200000) + addr, placing the out-of-object address
+ * "array minus constant" in the literal pool as one absolute relocation.
+ * In a static 3DS build the result can land below the 0x100000 image base,
+ * and 3dsxtool aborts with "Relocation to invalid address!". Masking the
+ * index does not help: with the range known from the branch, GCC turns the
+ * mask back into the subtraction. An empty asm makes the index opaque so
+ * the base stays the plain symbol; it emits no code. */
+#if defined(__GNUC__)
+#define ROM_INDEX(i) __extension__ ({ unsigned int rom_index_ = (i); \
+   __asm__ ("" : "+r" (rom_index_)); rom_index_; })
+#else
+#define ROM_INDEX(i) (i)
+#endif
+
 /* TLCS 900h memory */
 extern unsigned char *cpuram;
 void mem_init(void);
@@ -97,15 +115,15 @@ static INLINE unsigned char *get_address(unsigned int addr)
    else
    {
       if (addr<0x00400000)
-         return &mainrom[(addr-0x00200000) /*&cartAddrMask*/];
+         return &mainrom[ROM_INDEX(addr-0x00200000)];
       if(addr<0x00800000) /* Flavor added */
          return 0;
       if (addr<0x00A00000)
-         return &mainrom[(addr-(0x00800000-0x00200000))/*&cartAddrMask*/];
+         return &mainrom[ROM_INDEX(addr-(0x00800000-0x00200000))];
       if(addr<0x00FF0000) /* Flavor added */
          return 0;
 
-      return &cpurom[addr-0x00ff0000];
+      return &cpurom[ROM_INDEX(addr-0x00ff0000)];
    }
    return 0;  /* Flavor ERROR */
 }
@@ -149,14 +167,14 @@ static INLINE unsigned char tlcsMemReadB(unsigned int addr)
 	else
 	{
 		if (addr<0x00400000)
-            return mainrom[(addr-0x00200000)/*&cartAddrMask*/];
+            return mainrom[ROM_INDEX(addr-0x00200000)];
 		if (addr<0x00800000)
             return 0xFF;
 		if (addr<0x00a00000)
-            return mainrom[(addr-(0x00800000-0x00200000))/*&cartAddrMask*/];
+            return mainrom[ROM_INDEX(addr-(0x00800000-0x00200000))];
 		if (addr<0x00ff0000)
             return 0xFF;
-		return cpurom[addr-0x00ff0000];
+		return cpurom[ROM_INDEX(addr-0x00ff0000)];
 	}
 	return 0xFF;
 }
